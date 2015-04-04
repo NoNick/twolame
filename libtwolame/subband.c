@@ -35,16 +35,16 @@
 #include "subband.h"
 
 
-static void create_dct_matrix(FLOAT filter[16][32])
+static void create_dct_matrix(float filter[16][32])
 {
     register int i, k;
 
     for (i = 0; i < 16; i++)
         for (k = 0; k < 32; k++) {
-            if ((filter[i][k] = 1e9 * cos((FLOAT) ((2 * i + 1) * k * PI64))) >= 0)
-                modf(filter[i][k] + 0.5, &filter[i][k]);
+            if ((filter[i][k] = 1e9 * cos((float) ((2 * i + 1) * k * PI))) >= 0)
+                modff(filter[i][k] + 0.5, &filter[i][k]);
             else
-                modf(filter[i][k] - 0.5, &filter[i][k]);
+                modff(filter[i][k] - 0.5, &filter[i][k]);
             filter[i][k] *= 1e-9;
         }
 }
@@ -64,16 +64,17 @@ int init_subband(subband_mem * smem)
     return 0;
 }
 
+void asm_cycle(FLOAT *dp, int pa, FLOAT *y, FLOAT* enwindowT);
 
 void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[SBLIMIT])
 {
     register int i, j;
     int pa, pb, pc, pd, pe, pf, pg, ph;
-    FLOAT t;
-    FLOAT *dp, *dp2;
-    const FLOAT *pEnw;
-    FLOAT y[64];
-    FLOAT yprime[32];
+    float t;
+    float *dp, *dp2;
+    const float *pEnw;
+    float y[64];
+    float yprime[32];
 
     dp = smem->x[ch] + smem->off[ch] + smem->half[ch] * 256;
 
@@ -92,17 +93,18 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
     pg = (pa + 6) % 8;
     ph = (pa + 7) % 8;
 
+    pEnw = enwindowT;
     for (i = 0; i < 32; i++) {
         dp2 = dp + i * 8;
-        pEnw = enwindow + i;
-        t = dp2[pa] * pEnw[0];
-        t += dp2[pb] * pEnw[64];
-        t += dp2[pc] * pEnw[128];
-        t += dp2[pd] * pEnw[192];
-        t += dp2[pe] * pEnw[256];
-        t += dp2[pf] * pEnw[320];
-        t += dp2[pg] * pEnw[384];
-        t += dp2[ph] * pEnw[448];
+//        pEnw = enwindow + i;
+        t = dp2[pa] * (*(pEnw++));
+        t += dp2[pb] * (*(pEnw++));
+        t += dp2[pc] * (*(pEnw++));
+        t += dp2[pd] * (*(pEnw++));
+        t += dp2[pe] * (*(pEnw++));
+        t += dp2[pf] * (*(pEnw++));
+        t += dp2[pg] * (*(pEnw++));
+        t += dp2[ph] * (*(pEnw++));
         y[i] = t;
     }
 
@@ -118,17 +120,18 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
     pg = (pa + 6) % 8;
     ph = (pa + 7) % 8;
 
+    pEnw = enwindowT + 32 * 8;
     for (i = 0; i < 32; i++) {
         dp2 = dp + i * 8;
-        pEnw = enwindow + i + 32;
-        t = dp2[pa] * pEnw[0];
-        t += dp2[pb] * pEnw[64];
-        t += dp2[pc] * pEnw[128];
-        t += dp2[pd] * pEnw[192];
-        t += dp2[pe] * pEnw[256];
-        t += dp2[pf] * pEnw[320];
-        t += dp2[pg] * pEnw[384];
-        t += dp2[ph] * pEnw[448];
+//        pEnw = enwindow + i + 32;
+        t = dp2[pa] * (*(pEnw++));
+        t += dp2[pb] * (*(pEnw++));
+        t += dp2[pc] * (*(pEnw++));
+        t += dp2[pd] * (*(pEnw++));
+        t += dp2[pe] * (*(pEnw++));
+        t += dp2[pf] * (*(pEnw++));
+        t += dp2[pg] * (*(pEnw++));
+        t += dp2[ph] * (*(pEnw++));
         y[i + 32] = t;
         // 1st pass on Michael Chen's dct filter
         if (i > 0 && i < 17)
@@ -140,9 +143,9 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
         yprime[i] = y[i + 16] - y[80 - i];
 
     for (i = 15; i >= 0; i--) {
-        register FLOAT s0 = 0.0, s1 = 0.0;
-        register FLOAT *mp = smem->m[i];
-        register FLOAT *xinp = yprime;
+        register float s0 = 0.0, s1 = 0.0;
+        register float *mp = smem->m[i];
+        register float *xinp = yprime;
         for (j = 0; j < 8; j++) {
             s0 += *mp++ * *xinp++;
             s1 += *mp++ * *xinp++;

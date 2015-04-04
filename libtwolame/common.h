@@ -218,8 +218,8 @@ typedef struct psycho_4_mem_struct {
 ****************************************************************************************/
 
 typedef struct subband_mem_struct {
-    FLOAT x[2][512];
-    FLOAT m[16][32];
+    float x[2][512];
+    float m[16][32];
     int off[2];
     int half[2];
 } subband_mem;
