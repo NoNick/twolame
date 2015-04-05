@@ -15,14 +15,18 @@ section .text
 
 global asm_cycle
 
-%macro  place 1
-        mov         eax, dword [rdi + r9 * 4]
-        mov         dword [rel %1], eax
-        inc         r9
-        and         r9, 7
-%endmacro
-
-; void asm_cycle(FLOAT *dp, int pa, FLOAT *y, FLOAT* enwindowT);
+; void asm_cycle(float *dp, int pa, float *y, const float *enwindowT);
+; similar to following C code:
+;     float *pEnw = enwindowT;
+;     for (i = 0; i < 32; i++) {
+;         float *dp2 = dp + i * 8;
+;         float t = 0;
+;         for (j = 0; j < 8; j++) {
+;             t += dp2[(pa + j) % 8] * pEnw[j];
+;         }
+;         pEnw += j;
+;         y[i] = t;
+;     }
 asm_cycle:
         mov     r11, [rel zero]
         cmp     rsi, 0
@@ -52,140 +56,62 @@ asm_cycle:
         .loop1:
                 jmp     r11
             .done:
-;                mov     r9, rsi
-;                place   pos0
-;                place   pos1
-;                place   pos2
-;                place   pos3
-;                place   pos4
-;                place   pos5
-;                place   pos6
-;                place   pos7
-
-;                xorps   xmm0, xmm0
-;                vmovaps xmm2, [rel pos0]
-;                dpps    xmm1, [rcx], 0xF1
-;                addps   xmm0, xmm1
-;                vmovaps xmm2, [rel pos4]
-;                dpps    xmm1, [rcx + 16], 0xF1
-;                addps   xmm0, xmm1
-;                vmulps  ymm2, ymm0, ymm1
-                vmovaps ymm0, [rel pos0]
-                vdpps   ymm0, ymm0, [rcx], 0xF1
-                vmovaps [rel pos0], ymm0
-                movss   xmm0, [rel pos0]
-                movss   xmm1, [rel pos4]
+                dpps    xmm0, [rcx], 0xF1
+                dpps    xmm1, [rcx + 16], 0xF1
                 addss   xmm0, xmm1
                 movss   [rdx], xmm0
 
                 add     rdi, 32             ; dp += 8
                 add     rcx, 32             ; enwindowT += 8
                 add     rdx, 4              ; y++
-;                inc     r10
-;                cmp     r10, 32
-;                jl      .loop1
                 dec     r10
                 jnz     .loop1
 	ret
 
         .zero:
-                vmovups     ymm0, [rdi]
-                vmovaps     [rel pos0], ymm0
+                movups      xmm0, [rdi]
+                movups      xmm1, [rdi + 16]
                 jmp         .done
 
         .one:
                 movups      xmm0, [rdi + 4]
-                movaps      [rel pos0], xmm0
-                mov         rax, [rdi + 20]
-                mov         [rel pos4], rax
-                mov         rax, [rdi + 24]
-                mov         [rel pos5], rax
-                mov         rax, [rdi + 28]
-                mov         [rel pos6], rax
-                mov         rax, [rdi]
-                mov         [rel pos7], rax
+                movups      xmm1, [rdi + 20]            ; warning: access to potentially uninitialized data (byte after rdi + 32)
+                insertps    xmm1, [rdi], 0x30
                 jmp         .done
 
         .two:
                 movups      xmm0, [rdi + 8]
-                movaps      [rel pos0], xmm0
-                mov         rax, [rdi + 24]
-                mov         [rel pos4], rax
-                mov         rax, [rdi + 28]
-                mov         [rel pos5], rax
-                mov         rax, [rdi]
-                mov         [rel pos6], rax
-                mov         rax, [rdi + 4]
-                mov         [rel pos7], rax
+                movups      xmm1, [rdi + 24]            ; warning: access to potentially uninitialized data (2 bytes after rdi + 32)
+                insertps    xmm1, [rdi], 0x20           ; swapping 0x20 & 0x30 doesn't make a lot of noise
+                insertps    xmm1, [rdi + 4], 0x30       ; need to check if imm8 is right
                 jmp         .done
 
         .three:
                 movups      xmm0, [rdi + 12]
-                movaps      [rel pos0], xmm0
-                mov         rax, [rdi + 28]
-                mov         [rel pos4], rax
-                mov         rax, [rdi]
-                mov         [rel pos5], rax
-                mov         rax, [rdi + 4]
-                mov         [rel pos6], rax
-                mov         rax, [rdi + 8]
-                mov         [rel pos7], rax
+                movups      xmm1, [rdi - 4]             ; warning: access to potentially uninitialized data (byte before rdi)
+                insertps    xmm1, [rdi + 28], 0x0
                 jmp         .done
 
         .four:
                 movups      xmm0, [rdi + 16]
-                movaps      [rel pos0], xmm0
-                movups      xmm0, [rdi]
-                movaps      [rel pos4], xmm0
+                movups      xmm1, [rdi]
                 jmp         .done
 
         .five:
-                mov         rax, [rdi + 20]
-                mov         [rel pos0], rax
-                mov         rax, [rdi + 24]
-                mov         [rel pos1], rax
-                mov         rax, [rdi + 28]
-                mov         [rel pos2], rax
-                mov         rax, [rdi]
-                mov         [rel pos3], rax
-                movups      xmm0, [rdi + 4]
-                movaps      [rel pos4], xmm0
+                movups      xmm0, [rdi + 20]            ; warning: access to potentially uninitialized data (byte after rdi + 32)
+                insertps    xmm0, [rdi], 0x30
+                movups      xmm1, [rdi + 4]
                 jmp         .done
 
         .six:
-                mov         rax, [rdi + 24]
-                mov         [rel pos0], rax
-                mov         rax, [rdi + 28]
-                mov         [rel pos1], rax
-                mov         rax, [rdi]
-                mov         [rel pos2], rax
-                mov         rax, [rdi + 4]
-                mov         [rel pos3], rax
-                movups      xmm0, [rdi + 8]
-                movaps      [rel pos4], xmm0
+                movups      xmm0, [rdi + 24]            ; warning: access to potentially uninitialized data (2 bytes after rdi + 32)
+                insertps    xmm0, [rdi], 0x20
+                insertps    xmm0, [rdi + 4], 0x30
+                movups      xmm1, [rdi + 8]
                 jmp         .done
 
         .seven:
-                mov         rax, [rdi + 28]
-                mov         [rel pos0], rax
-                mov         rax, [rdi]
-                mov         [rel pos1], rax
-                mov         rax, [rdi + 4]
-                mov         [rel pos2], rax
-                mov         rax, [rdi + 8]
-                mov         [rel pos3], rax
-                movups      xmm0, [rdi + 12]
-                movaps      [rel pos4], xmm0
+                movups      xmm0, [rdi - 4]             ; warning: access to potentially uninitialized data (byte before rdi)
+                insertps    xmm0, [rdi + 28], 0x0
+                movups      xmm1, [rdi + 12]
                 jmp         .done
-
-
-section .bss
-    align   32
-    pos0:   resb 4
-    pos1:   resb 4
-    pos2:   resb 4
-    pos3:   resb 4
-    pos4:   resb 4
-    pos5:   resb 4
-    pos6:   resb 4
-    pos7:   resb 4
