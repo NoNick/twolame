@@ -41,7 +41,7 @@ static void create_dct_matrix(float filter[16][32])
 
     for (i = 0; i < 16; i++)
         for (k = 0; k < 32; k++) {
-            if ((filter[i][k] = 1e9 * cos((float) ((2 * i + 1) * k * PI))) >= 0)
+            if ((filter[i][k] = 1e9 * cos((float) ((2 * i + 1) * k * PI64))) >= 0)
                 modff(filter[i][k] + 0.5, &filter[i][k]);
             else
                 modff(filter[i][k] - 0.5, &filter[i][k]);
@@ -64,7 +64,7 @@ int init_subband(subband_mem * smem)
     return 0;
 }
 
-void asm_cycle(FLOAT *dp, int pa, FLOAT *y, FLOAT* enwindowT);
+void asm_cycle(float *dp, int pa, float *y, const float *enwindowT);
 
 void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[SBLIMIT])
 {
@@ -85,7 +85,8 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
     // looks like "school example" but does faster ...
     dp = (smem->x[ch] + smem->half[ch] * 256);
     pa = smem->off[ch];
-    pb = (pa + 1) % 8;
+    asm_cycle(dp, pa, y, enwindowT);
+/*    pb = (pa + 1) % 8;
     pc = (pa + 2) % 8;
     pd = (pa + 3) % 8;
     pe = (pa + 4) % 8;
@@ -106,7 +107,7 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
         t += dp2[pg] * (*(pEnw++));
         t += dp2[ph] * (*(pEnw++));
         y[i] = t;
-    }
+    }*/
 
     yprime[0] = y[16];          // Michael Chen's dct filter
 
