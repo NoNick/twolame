@@ -28,28 +28,8 @@ global asm_cycle
 ;         y[i] = t;
 ;     }
 asm_cycle:
-        mov     r11, [rel zero]
-        cmp     rsi, 0
-        je      .begin
-        mov     r11, [rel one]
-        cmp     rsi, 1
-        je      .begin
-        mov     r11, [rel two]
-        cmp     rsi, 2
-        je      .begin
-        mov     r11, [rel three]
-        cmp     rsi, 3
-        je      .begin
-        mov     r11, [rel four]
-        cmp     rsi, 4
-        je      .begin
-        mov     r11, [rel five]
-        cmp     rsi, 5
-        je      .begin
-        mov     r11, [rel six]
-        cmp     rsi, 6
-        je      .begin
-        mov     r11, [rel seven]
+        lea rax, [rel zero]
+        mov r11, [rax + rsi * 8]
 
     .begin:
         mov     r10, 32
