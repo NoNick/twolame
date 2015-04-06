@@ -41,7 +41,7 @@ static void create_dct_matrix(float filter[16][32])
 
     for (i = 0; i < 16; i++)
         for (k = 0; k < 32; k++) {
-            if ((filter[i][k] = 1e9 * cos((float) ((2 * i + 1) * k * PI64))) >= 0)
+            if ((filter[i][k] = 1e9 * cos((FLOAT) ((2 * i + 1) * k * PI64))) >= 0)
                 modff(filter[i][k] + 0.5, &filter[i][k]);
             else
                 modff(filter[i][k] - 0.5, &filter[i][k]);
