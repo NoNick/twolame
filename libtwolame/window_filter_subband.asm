@@ -15,8 +15,9 @@ section .data
 
 section .text
 
-global asm_cycle
-global asm_cycle_extended
+global dct1_sse_4_1
+global dct1_extended_sse_4_1
+global dct2_avx
 
 ; fills r11 with address of suitable fetch function (zero, one, etc.)
 ; when the offset is in rsi
@@ -35,7 +36,7 @@ global asm_cycle_extended
         movss   [rdx], xmm0
 %endmacro
 
-; void asm_cycle(float *dp, int pa, float *y, const float *enwindowT, int n_cycles);
+; void dct1_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int n_cycles);
 ; similar to following C code:
 ;     float *pEnw = enwindowT;
 ;     for (i = 0; i < n_cycles; i++) {
@@ -47,7 +48,7 @@ global asm_cycle_extended
 ;         pEnw += j;
 ;         y[i] = t;
 ;     }
-asm_cycle:
+dct1_sse_4_1:
         func_in_r11
 
         .loop1:
@@ -60,7 +61,7 @@ asm_cycle:
                 jnz     .loop1
 	ret
 
-; void asm_cycle_extended(float *dp, int pa, float *y, const float *enwindowT, int n_cycles, float *yprime);
+; void dct1_extended_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int n_cycles, float *yprime);
 ; similar to following C code:
 ;     float *pEnw = enwindowT;
 ;     for (i = 0; i < n_cycles; i++) {
@@ -73,7 +74,7 @@ asm_cycle:
 ;         y[33 + i] = t;
 ;         yprime[i + 1] = y[i + 17] + y[15 - i];
 ;     }
-asm_cycle_extended:
+dct1_extended_sse_4_1:
         func_in_r11
 
         add     r9, 4                       ; yprime[i]
@@ -145,3 +146,61 @@ asm_cycle_extended:
                 insertps    xmm0, [rdi + 28], 0x0
                 movups      xmm1, [rdi + 12]
                 ret
+
+; void dct2_avx(float *s, float *yprime, float mem[][32]);
+;
+; similar to following C code:
+;    for (i = 16; i > 0; i--) {
+;    register float s0 = 0.0, s1 = 0.0;
+;    register float *mp = mem[i - 1];
+;    register float *xinp = yprime;
+;    for (j = 0; j < 8; j++) {
+;        s0 += *mp++ * *xinp++;
+;        s1 += *mp++ * *xinp++;
+;        s0 += *mp++ * *xinp++;
+;        s1 += *mp++ * *xinp++;
+;    }
+;    s[i - 1] = s0 + s1;
+;    s[32 - i] = s0 - s1;
+;}
+dct2_avx:
+        lea     rdx, [rdx + 1920] ; mem[i - 1][0]. i = 16, 15 * 32 * 4 = 1920
+        lea     r8, [rdi + 16 * 8]  ; s[32 - i], i = 16
+        lea     rdi, [rdi + 15 * 8] ; s[i - 1], i = 16
+        mov     rcx, 16
+        .loop1:
+                xorps   xmm0, xmm0              ; s0
+                xorps   xmm1, xmm1              ; s1
+                mov     rax, rdx                ; mp = mem[i - 1]
+                mov     r9, rsi                 ; xinp = yprime
+                mov     r10, 8
+                .loop2:
+                        movups  xmm2, [rax]
+                        movups  xmm3, [r9]
+                        vdpps   xmm4, xmm2, xmm3, 0x51
+                        addss   xmm0, xmm4
+                        vdpps   xmm4, xmm2, xmm3, 0xa1
+                        addss   xmm1, xmm4
+                        add     rax, 16
+                        add     r9, 16
+                        dec     r10
+                        jnz     .loop2
+                vaddss  xmm4, xmm0, xmm1
+                cvtss2sd xmm4, xmm4
+                movsd   [rdi], xmm4             ; s[i - 1] = s0 + s1
+                vsubss  xmm4, xmm0, xmm1
+                cvtss2sd xmm4, xmm4
+                movsd   [r8], xmm4              ; s[32 - i] = s0 - s1
+                sub     rdi, 8                  ; s[i - 1]
+                add     r8, 8                   ; s[32 - i]
+                sub     rdx, 128                ; mem[i - 1]
+                loop    .loop1
+        ret
+
+
+
+
+
+
+
+

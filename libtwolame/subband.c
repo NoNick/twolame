@@ -64,12 +64,13 @@ int init_subband(subband_mem * smem)
     return 0;
 }
 
-void asm_cycle(float *dp, int pa, float *y, const float *enwindowT, int cycles_n);
-void asm_cycle_extended(float *dp, int pa, float *y, const float *enwindowT, int cycles_n, float *yprime);
+void dct1_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int cycles_n);
+void dct1_extended_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int cycles_n, float *yprime);
+void dct2_avx(double *s, float *yprime, float mem[][32]);
 
 void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[SBLIMIT])
 {
-    register int i, j;
+    register int i;//, j;
     int pa;//, pb, pc, pd, pe, pf, pg, ph;
 //    float t;
     float *dp;//, *dp2;
@@ -86,7 +87,7 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
     // looks like "school example" but does faster ...
     dp = (smem->x[ch] + smem->half[ch] * 256);
     pa = smem->off[ch];
-    asm_cycle(dp, pa, y, enwindowT, 32);
+    dct1_sse_4_1(dp, pa, y, enwindowT, 32);
 
 /*    pb = (pa + 1) % 8;
     pc = (pa + 2) % 8;
@@ -114,9 +115,9 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
 
     dp = smem->half[ch] ? smem->x[ch] : (smem->x[ch] + 256);
     pa = smem->half[ch] ? (smem->off[ch] + 1) & 7 : smem->off[ch];
-    asm_cycle(dp, pa, y + 32, enwindowT + 32 * 8, 1);
-    asm_cycle_extended(dp + 8, pa, y, enwindowT + 32 * 8 + 8, 16, yprime);
-    asm_cycle(dp + 17 * 8, pa, y + 32 + 17, enwindowT + (32 + 17) * 8, 15);
+    dct1_sse_4_1(dp, pa, y + 32, enwindowT + 32 * 8, 1);
+    dct1_extended_sse_4_1(dp + 8, pa, y, enwindowT + 32 * 8 + 8, 16, yprime);
+    dct1_sse_4_1(dp + 17 * 8, pa, y + 32 + 17, enwindowT + (32 + 17) * 8, 15);
 
 /*    pb = (pa + 1) % 8;
     pc = (pa + 2) % 8;
@@ -147,7 +148,8 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
     for (i = 17; i < 32; i++)
         yprime[i] = y[i + 16] - y[80 - i];
 
-    for (i = 15; i >= 0; i--) {
+    dct2_avx(s, yprime, smem->m);
+/*    for (i = 15; i >= 0; i--) {
         register float s0 = 0.0, s1 = 0.0;
         register float *mp = smem->m[i];
         register float *xinp = yprime;
@@ -159,7 +161,7 @@ void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[S
         }
         s[i] = s0 + s1;
         s[31 - i] = s0 - s1;
-    }
+    }*/
 
     smem->half[ch] = (smem->half[ch] + 1) & 1;
 
