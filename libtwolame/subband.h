@@ -26,8 +26,10 @@
 #ifndef TWOLAME_SUBBAND_H
 #define TWOLAME_SUBBAND_H
 
+#include <stdint.h>
+
 int init_subband(subband_mem * smem);
-void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[SBLIMIT]);
+void window_filter_subband(subband_mem * smem, int32_t *pBuffer, int ch, FLOAT s[SBLIMIT]);
 
 #endif
 

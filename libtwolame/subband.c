@@ -68,7 +68,7 @@ void dct1_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int cycle
 void dct1_extended_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int cycles_n, float *yprime);
 void dct2_avx(double *s, float *yprime, float mem[][32]);
 
-void window_filter_subband(subband_mem * smem, short *pBuffer, int ch, FLOAT s[SBLIMIT])
+void window_filter_subband(subband_mem * smem, int32_t *pBuffer, int ch, FLOAT s[SBLIMIT])
 {
     register int i;//, j;
     int pa;//, pb, pc, pd, pe, pf, pg, ph;

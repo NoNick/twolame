@@ -25,8 +25,10 @@
 #ifndef TWOLAME_PSYCHO_2_H
 #define TWOLAME_PSYCHO_2_H
 
+#include <stdint.h>
+
 psycho_2_mem *psycho_2_init(twolame_options * glopts, int sfreq);
-void psycho_2(twolame_options * glopts, short int buffer[2][1152], short int savebuf[2][1056],
+void psycho_2(twolame_options * glopts, int32_t buffer[2][1152], int32_t savebuf[2][1056],
               FLOAT smr[2][32]);
 void psycho_2_deinit(psycho_2_mem ** mem);
 

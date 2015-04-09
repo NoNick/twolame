@@ -297,7 +297,7 @@ static psycho_4_mem *psycho_4_init(twolame_options * glopts, int sfreq)
 
 
 void psycho_4(twolame_options * glopts,
-              short int buffer[2][1152], short int savebuf[2][1056], FLOAT smr[2][32])
+              int32_t buffer[2][1152], int32_t savebuf[2][1056], FLOAT smr[2][32])
 /* to match prototype : FLOAT args are always FLOAT */
 {
     psycho_4_mem *mem;
@@ -365,7 +365,7 @@ void psycho_4(twolame_options * glopts,
                flush = 384*3.0/2.0; = 576 syncsize = 1056; sync_flush = syncsize - flush; 480
                BLKSIZE = 1024 */
             {
-                short int *bufferp = buffer[ch];
+                int32_t *bufferp = buffer[ch];
                 for (j = 0; j < 480; j++) {
                     savebuf[ch][j] = savebuf[ch][j + 576];
                     wsamp_r[j] = window[j] * ((FLOAT) savebuf[ch][j]);

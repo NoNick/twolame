@@ -32,6 +32,8 @@
 # include "config.h"
 #endif
 
+#include <stdint.h>
+
 #include "twolame.h"
 
 
@@ -150,7 +152,7 @@ typedef struct psycho_3_mem_struct {
     int freq_subset[SUBSIZE];
     FLOAT bark[HBLKSIZE];
     FLOAT ath[HBLKSIZE];
-    FLOAT fft_buf[2][1408];
+    float fft_buf[2][1408];
 #define CRITBANDMAX 32          /* this is much higher than it needs to be. really only about 24 */
     int cbands;                 /* How many critical bands there really are */
     int cbandindex[CRITBANDMAX];    /* The spectral line index of the start of each critical band */
@@ -325,7 +327,7 @@ struct twolame_options_struct {
 
     // Used by twolame_encode_frame
     int twolame_init;
-    short int buffer[2][TWOLAME_SAMPLES_PER_FRAME]; // Sample buffer
+    int32_t buffer[2][TWOLAME_SAMPLES_PER_FRAME]; // Sample buffer
     unsigned int samples_in_buffer; // Number of samples currently in buffer
     unsigned int psycount;
     unsigned int num_crc_bits;  // Number of bits CRC is calculated on

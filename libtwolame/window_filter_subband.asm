@@ -12,12 +12,23 @@ section .data
         five_   dq five
         six_    dq six
         seven_  dq seven
+        ; scale is a package of eight 2 ** -15 numbers
+        scale   dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
+                dd 0x47000000
 
 section .text
 
 global dct1_sse_4_1
 global dct1_extended_sse_4_1
 global dct2_avx
+global fill_fft_buf_avx
+global fill_sample_avx
 
 ; fills r11 with address of suitable fetch function (zero, one, etc.)
 ; when the offset is in rsi
@@ -34,6 +45,11 @@ global dct2_avx
         dpps    xmm1, [rcx + 16], 0xF1
         addss   xmm0, xmm1
         movss   [rdx], xmm0
+%endmacro
+
+; if ((rdx += 8) >= 1408)  rdx = 0
+%macro  inc_cyclic 0
+
 %endmacro
 
 ; void dct1_sse_4_1(float *dp, int pa, float *y, const float *enwindowT, int n_cycles);
@@ -197,10 +213,38 @@ dct2_avx:
                 loop    .loop1
         ret
 
+; void fill_fft_buf_avx(float fft_buf[1408], int32_t buffer[1152], int ok);
+fill_fft_buf_avx:
+        mov     rcx, 1152
+        vmovups ymm0, [rel scale]
+        .loop1:
+                vcvtdq2ps ymm1, [rsi]
+                vdivps  ymm1, ymm1, ymm0
+                vmovups [rdi + 4 * rdx], ymm1
+                add     rdx, 8
+                cmp     rdx, 1408
+                jl      .continue
+                mov     rdx, 0
+            .continue:
+                add     rsi, 32
+                sub     rcx, 8
+                cmp     rcx, 0
+                ja      .loop1
+    .done:
+        ret
 
-
-
-
-
-
-
+; void fill_sample_avx(float sample[HBLKSIZE], float fft_buf[1408], int ok, int blksize);
+fill_sample_avx:
+        .loop:
+                vmovups ymm0, [rsi + rdx * 4]
+                vmovups [rdi], ymm0
+                add     rdx, 8
+                cmp     rdx, 1408
+                jl      .continue
+                mov     rdx, 0
+            .continue:
+                add     rdi, 32
+                sub     rcx, 8
+                cmp     rcx, 0
+                ja      .loop
+        ret

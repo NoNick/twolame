@@ -425,7 +425,7 @@ static int encode_frame(twolame_options * glopts, bit_stream * bs)
     int nch = glopts->num_channels_out;
     int sb, ch, adb, i;
     unsigned long frameBits, initial_bits;
-    short sam[2][1056];
+    int32_t sam[2][1056];
 
     if (!glopts->twolame_init) {
         fprintf(stderr, "Please call twolame_init_params() before starting encoding.\n");
@@ -722,7 +722,7 @@ int twolame_encode_buffer_interleaved(twolame_options * glopts,
 }
 
 
-static void float32_to_short(const float in[], short out[], int num_samples, int stride)
+static void float32_to_short(const float in[], int32_t out[], int num_samples, int stride)
 {
     int n;
 
@@ -733,7 +733,7 @@ static void float32_to_short(const float in[], short out[], int num_samples, int
         } else if (tmp < SHRT_MIN) {
             out[n] = SHRT_MIN;
         } else {
-            out[n] = (short) tmp;
+            out[n] = (int32_t) tmp;
         }
     }
 }

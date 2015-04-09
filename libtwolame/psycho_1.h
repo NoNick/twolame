@@ -25,7 +25,9 @@
 #ifndef TWOLAME_PSYCHO_1_H
 #define TWOLAME_PSYCHO_1_H
 
-void psycho_1(twolame_options * glopts, short int buffer[2][1152], FLOAT scale[2][32],
+#include <stdint.h>
+
+void psycho_1(twolame_options * glopts, int32_t buffer[2][1152], FLOAT scale[2][32],
               FLOAT ltmin[2][32]);
 void psycho_1_deinit(psycho_1_mem ** mem);
 

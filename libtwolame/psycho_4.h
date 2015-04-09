@@ -25,7 +25,7 @@
 #ifndef TWOLAME_PSYCHO_4_H
 #define TWOLAME_PSYCHO_4_H
 
-void psycho_4(twolame_options * glopts, short int buffer[2][1152], short int savebuf[2][1056],
+void psycho_4(twolame_options * glopts, int32_t buffer[2][1152], int32_t savebuf[2][1056],
               FLOAT smr[2][32]);
 void psycho_4_deinit(psycho_4_mem ** mem);
 

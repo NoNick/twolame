@@ -556,7 +556,7 @@ static void psycho_1_dump(mask power[HAN_SIZE], int *tone, int *noise) {
 */
 
 
-void psycho_1(twolame_options * glopts, short buffer[2][1152], FLOAT scale[2][SBLIMIT],
+void psycho_1(twolame_options * glopts, int32_t buffer[2][1152], FLOAT scale[2][SBLIMIT],
               FLOAT ltmin[2][SBLIMIT])
 {
     psycho_1_mem *mem;

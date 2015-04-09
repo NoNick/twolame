@@ -1,4 +1,4 @@
-AM_CFLAGS = -I ../build/ $(WARNING_CFLAGS)
+AM_CFLAGS = -I ../build/ -g $(WARNING_CFLAGS)
 
 lib_LTLIBRARIES = libtwolame.la
 include_HEADERS = twolame.h
@@ -51,4 +51,4 @@ libtwolame_la_SOURCES = \
 	util.h
 
 filter.o: window_filter_subband.asm
-	yasm -o filter.o -f elf64 -dPTC_ARCH=X64 window_filter_subband.asm
+	yasm -o filter.o -f elf64 -g dwarf2 -dPTC_ARCH=X64 window_filter_subband.asm

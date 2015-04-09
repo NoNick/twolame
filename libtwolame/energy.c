@@ -66,8 +66,8 @@ void do_energy_levels(twolame_options * glopts, bit_stream * bs)
        The last 5 bytes *must* be reserved for this to work correctly (otherwise you'll be
        overwriting mpeg audio data) */
 
-    short int *leftpcm = glopts->buffer[0];
-    short int *rightpcm = glopts->buffer[1];
+    int32_t *leftpcm = glopts->buffer[0];
+    int32_t *rightpcm = glopts->buffer[1];
 
     int i, leftMax, rightMax;
     unsigned char rhibyte, rlobyte, lhibyte, llobyte;

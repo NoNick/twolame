@@ -70,12 +70,12 @@ static inline FLOAT psycho_3_add_db(psycho_3_mem * mem, FLOAT a, FLOAT b)
 
 
 /* ISO11172 Sec D.1 Step 1 - Window with HANN and then perform the FFT */
-static void psycho_3_fft(FLOAT sample[BLKSIZE], FLOAT energy[BLKSIZE])
+static void psycho_3_fft(float sample[BLKSIZE], FLOAT energy[BLKSIZE])
 {
     FLOAT x_real[BLKSIZE];
     int i;
     static int init = 0;
-    static FLOAT window[FFT_SIZE];
+    static float window[FFT_SIZE];
 
     if (!init) {                /* calculate window function for the Fourier transform */
         FLOAT sqrt_8_over_3 = pow(8.0 / 3.0, 0.5);
@@ -522,14 +522,16 @@ static void psycho_3_dump(int *tonelabel, FLOAT * Xtm, int *noiselabel, FLOAT * 
     fprintf(stderr, "\n");
 }
 
+void fill_fft_buf_avx(float fft_buf[1408], int32_t buffer[1152], int ok);
+void fill_sample_avx(float sample[HBLKSIZE], float fft_buf[1408], int ok, int blksize);
 
-void psycho_3(twolame_options * glopts, short int buffer[2][1152], FLOAT scale[2][32],
+void psycho_3(twolame_options * glopts, int32_t buffer[2][1152], FLOAT scale[2][32],
               FLOAT ltmin[2][32])
 {
     psycho_3_mem *mem;
     int nch = glopts->num_channels_out;
-    int k, i;
-    FLOAT sample[BLKSIZE];
+    int k;//, i;
+    float sample[BLKSIZE];
 
     FLOAT energy[BLKSIZE];
     FLOAT power[HBLKSIZE] = {0};
@@ -545,17 +547,24 @@ void psycho_3(twolame_options * glopts, short int buffer[2][1152], FLOAT scale[2
 
     for (k = 0; k < nch; k++) {
         int ok = mem->off[k] % 1408;
-        for (i = 0; i < 1152; i++) {
-            mem->fft_buf[k][ok++] = (FLOAT) buffer[k][i] / SCALE;
+        fill_fft_buf_avx(mem->fft_buf[k], buffer[k], ok);
+        ok += 1152;
+        ok %= 1408;
+/*        for (i = 0; i < 1152; i++) {
+            float tmp = (FLOAT) buffer[k][i] / SCALE;
+            mem->fft_buf[k][ok++] = tmp;
             if (ok >= 1408)
                 ok = 0;
-        }
+        }*/
         ok = (mem->off[k] + 1216) % 1408;
-        for (i = 0; i < BLKSIZE; i++) {
+        fill_sample_avx(sample, mem->fft_buf[k], ok, BLKSIZE);
+        ok += BLKSIZE;
+        ok %= 1408;
+/*        for (i = 0; i < BLKSIZE; i++) {
             sample[i] = mem->fft_buf[k][ok++];
             if (ok >= 1408)
                 ok = 0;
-        }
+        }*/
 
         mem->off[k] += 1152;
         mem->off[k] %= 1408;
