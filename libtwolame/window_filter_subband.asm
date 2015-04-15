@@ -232,19 +232,3 @@ fill_fft_buf_avx:
                 ja      .loop1
     .done:
         ret
-
-; void fill_sample_avx(float sample[HBLKSIZE], float fft_buf[1408], int ok, int blksize);
-fill_sample_avx:
-        .loop:
-                vmovups ymm0, [rsi + rdx * 4]
-                vmovups [rdi], ymm0
-                add     rdx, 8
-                cmp     rdx, 1408
-                jl      .continue
-                mov     rdx, 0
-            .continue:
-                add     rdi, 32
-                sub     rcx, 8
-                cmp     rcx, 0
-                ja      .loop
-        ret

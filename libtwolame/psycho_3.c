@@ -523,7 +523,6 @@ static void psycho_3_dump(int *tonelabel, FLOAT * Xtm, int *noiselabel, FLOAT * 
 }
 
 void fill_fft_buf_avx(float fft_buf[1408], int32_t buffer[1152], int ok);
-void fill_sample_avx(float sample[HBLKSIZE], float fft_buf[1408], int ok, int blksize);
 
 void psycho_3(twolame_options * glopts, int32_t buffer[2][1152], FLOAT scale[2][32],
               FLOAT ltmin[2][32])
@@ -557,7 +556,10 @@ void psycho_3(twolame_options * glopts, int32_t buffer[2][1152], FLOAT scale[2][
                 ok = 0;
         }*/
         ok = (mem->off[k] + 1216) % 1408;
-        fill_sample_avx(sample, mem->fft_buf[k], ok, BLKSIZE);
+
+        size_t size_ = 1408 - ok > BLKSIZE ? BLKSIZE : 1408 - ok;
+        memcpy(sample, mem->fft_buf[k] + ok, size_ * sizeof(float));
+        memcpy(sample + size_, mem->fft_buf[k], (BLKSIZE - size_) * sizeof(float));
         ok += BLKSIZE;
         ok %= 1408;
 /*        for (i = 0; i < BLKSIZE; i++) {
